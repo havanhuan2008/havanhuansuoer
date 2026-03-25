@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AimLock Super V5 – Tool Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Nunito',system-ui,sans-serif;background:#0a0000;color:#ffd0d0;overflow-x:hidden}
+
+:root{
+  --R:#FF0000;
+  --R1:#ff3333;
+  --R2:#ff6666;
+  --R3:#ff9999;
+  --Rd:#cc0000;
+  --Rgg:rgba(255,0,0,.08);
+  --mu:#c08080;
+}
+
+/* ── Canvas ── */
+#cv{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ── BG glow ── */
+.bg-glow{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 55% at 15% 20%,rgba(255,0,0,.25) 0%,transparent 70%),
+    radial-gradient(ellipse 55% 45% at 85% 80%,rgba(180,0,0,.2) 0%,transparent 70%),
+    radial-gradient(ellipse 40% 35% at 55% 5%,rgba(255,0,0,.12) 0%,transparent 65%),
+    radial-gradient(ellipse 50% 45% at 5% 85%,rgba(255,0,0,.1) 0%,transparent 65%);
+}
+
+/* ── Page wrapper ── */
+.wrap{
+  position:relative;z-index:1;min-height:100vh;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:28px 16px 50px;
+}
+
+/* ══════════════════════════
+   AUTO-LOGIN CHECKING OVERLAY
+══════════════════════════ */
+#checking-overlay{
+  position:fixed;inset:0;z-index:8888;
+  background:rgba(10,0,0,.82);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  transition:opacity .4s ease;
+}
+#checking-overlay.off{opacity:0;pointer-events:none}
+#checking-overlay.gone{display:none}
+.co-ico{font-size:2.6rem;color:var(--R);text-shadow:0 0 30px var(--R);animation:spin 1.2s linear infinite}
+.co-txt{font-size:.88rem;color:var(--R2);font-weight:700;letter-spacing:2px}
+.co-dots span{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--R);margin:0 3px;animation:dotBounce .9s ease-in-out infinite}
+.co-dots span:nth-child(2){animation-delay:.18s}
+.co-dots span:nth-child(3){animation-delay:.36s}
+
+/* ══════════════════════════
+   LOGIN SCREEN
+══════════════════════════ */
+#login{
+  width:100%;max-width:400px;
+  display:flex;flex-direction:column;align-items:center;gap:26px;
+  animation:fadeUp .65s ease both;
+}
+#login.off{display:none!important}
+
+/* Logo ring */
+.lring{position:relative;width:130px;height:130px}
+.lring::before{
+  content:'';position:absolute;inset:-1px;border-radius:50%;
+  background:conic-gradient(var(--R) 0deg,#ff6600 80deg,var(--R) 180deg,#aa0000 280deg,var(--R) 360deg);
+  animation:spin 3s linear infinite;z-index:0;
+}
+.lring::after{
+  content:'';position:absolute;inset:-15px;border-radius:50%;
+  background:conic-gradient(transparent,rgba(255,0,0,.2) 90deg,transparent 200deg);
+  animation:spin 2.5s linear infinite reverse;z-index:0;filter:blur(3px);
+}
+.linner{
+  position:relative;z-index:1;width:130px;height:130px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#250000,#0a0000);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  box-shadow:0 0 45px rgba(255,0,0,.55),inset 0 0 30px rgba(255,0,0,.1);
+}
+.linner img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.linner .lico{font-size:52px;color:var(--R);text-shadow:0 0 30px var(--R);display:none}
+
+/* Brand */
+.brand{text-align:center}
+.brand h1{
+  font-size:1.65rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;
+  background:linear-gradient(90deg,var(--R),#ff6600,var(--R1));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.brand p{font-size:.74rem;color:var(--mu);letter-spacing:3.5px;margin-top:6px}
+
+/* Login card */
+.lcard{
+  width:100%;background:rgba(255,0,0,.04);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  border:1px solid rgba(255,0,0,.22);border-radius:22px;
+  padding:32px 28px;display:flex;flex-direction:column;gap:18px;
+  box-shadow:0 10px 60px rgba(255,0,0,.2),inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* Input */
+.iw{position:relative}
+.iico{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--R1);font-size:.9rem;pointer-events:none}
+.kinp{
+  width:100%;background:transparent;
+  border:2px solid rgba(255,0,0,.3);border-radius:50px;
+  padding:14px 20px 14px 48px;color:#ffd0d0;
+  font-size:.95rem;font-family:'Nunito',sans-serif;letter-spacing:.5px;
+  outline:none;transition:border-color .3s,box-shadow .3s;
+}
+.kinp::placeholder{color:rgba(192,100,100,.5)}
+.kinp:focus{border-color:var(--R);box-shadow:0 0 0 3px rgba(255,0,0,.16),0 0 28px rgba(255,0,0,.14)}
+
+/* Login button */
+.btnl{
+  width:100%;padding:15px;border:none;border-radius:50px;cursor:pointer;
+  background:linear-gradient(135deg,var(--Rd),var(--R),var(--R1));
+  color:#fff;font-size:.96rem;font-weight:800;font-family:'Nunito',sans-serif;letter-spacing:1px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .3s;box-shadow:0 5px 28px rgba(255,0,0,.45);
+  position:relative;overflow:hidden;
+}
+.btnl::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent,rgba(255,255,255,.2),transparent);
+  transform:translateX(-100%);transition:transform .5s;
+}
+.btnl:hover::before{transform:translateX(100%)}
+.btnl:hover{box-shadow:0 7px 40px rgba(255,0,0,.65);transform:translateY(-2px)}
+.btnl:active{transform:translateY(1px)}
+.btnl.ck{background:linear-gradient(135deg,#1a0000,#2d0000);color:var(--R1);border:1.5px solid rgba(255,0,0,.4);cursor:not-allowed;transform:none}
+.btnl.ok{background:linear-gradient(135deg,#004d26,#00c853);color:#fff;box-shadow:0 5px 30px rgba(0,200,83,.45)}
+.btnl.er{background:linear-gradient(135deg,#200000,#600000);color:#fff}
+
+/* Animated bars */
+.bars{display:flex;align-items:center;gap:3px;height:22px}
+.bars span{display:block;width:4px;border-radius:2px;background:var(--R1);animation:barP .75s ease-in-out infinite}
+.bars span:nth-child(1){height:6px;animation-delay:0s}
+.bars span:nth-child(2){height:10px;animation-delay:.1s}
+.bars span:nth-child(3){height:16px;animation-delay:.2s}
+.bars span:nth-child(4){height:22px;animation-delay:.3s}
+.bars span:nth-child(5){height:16px;animation-delay:.4s}
+.bars span:nth-child(6){height:10px;animation-delay:.5s}
+.bars span:nth-child(7){height:6px;animation-delay:.6s}
+
+/* Free key button */
+.btnf{
+  width:100%;padding:13px;border-radius:50px;
+  background:transparent;border:2px solid rgba(255,100,0,.4);
+  color:#ff9944;font-size:.9rem;font-weight:700;font-family:'Nunito',sans-serif;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .3s;
+}
+.btnf:hover{background:rgba(255,100,0,.1);border-color:#ff9944;box-shadow:0 0 28px rgba(255,100,0,.28)}
+
+.div{height:1px;background:linear-gradient(90deg,transparent,rgba(255,0,0,.3),transparent);margin:2px 0}
+
+/* ══════════════════════════
+   MAIN SCREEN
+══════════════════════════ */
+#main{
+  width:100%;max-width:450px;
+  display:none;flex-direction:column;gap:15px;
+  animation:fadeUp .5s ease both;
+}
+#main.on{display:flex}
+
+/* Glass card */
+.gc{
+  background:var(--Rgg);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,0,0,.2);border-radius:18px;
+  box-shadow:0 4px 30px rgba(255,0,0,.12);
+}
+
+/* Top bar */
+.topb{display:flex;align-items:center;justify-content:space-between}
+.tlogo{display:flex;align-items:center;gap:10px}
+.tlogo i{color:var(--R);font-size:1.05rem;text-shadow:0 0 14px var(--R)}
+.tn{
+  font-size:.96rem;font-weight:900;letter-spacing:1.5px;
+  background:linear-gradient(90deg,var(--R),#ff6600);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.sdot{width:9px;height:9px;border-radius:50%;background:#00e676;box-shadow:0 0 10px #00e676;animation:glow 2s infinite}
+.btnout{
+  background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.3);
+  color:var(--R2);padding:8px 16px;border-radius:50px;
+  font-size:.78rem;font-weight:700;font-family:'Nunito',sans-serif;
+  cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .3s;
+}
+.btnout:hover{background:rgba(255,0,0,.22);box-shadow:0 0 22px rgba(255,0,0,.3)}
+
+/* Key card */
+.kcard{padding:20px 22px}
+.kch{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.klw{
+  width:54px;height:54px;border-radius:50%;flex-shrink:0;
+  background:radial-gradient(circle,#250000,#0a0000);
+  border:2px solid rgba(255,0,0,.45);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 22px rgba(255,0,0,.28);overflow:hidden;
+}
+.klw img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.klw .ki{font-size:22px;color:var(--R);display:none}
+.ktw h3{font-size:.97rem;font-weight:800;color:var(--R1);letter-spacing:.8px}
+.ktw span{font-size:.72rem;color:var(--mu)}
+
+.krows{display:flex;flex-direction:column;gap:9px}
+.krow{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:rgba(255,0,0,.06);
+  border-radius:10px;border:1px solid rgba(255,0,0,.12);
+}
+.krl{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--mu)}
+.krl i{color:#ff9944;width:16px;text-align:center}
+.krv{font-size:.84rem;font-weight:700;color:#ffd0d0;text-align:right;max-width:57%;word-break:break-all}
+.krv.g{color:#00e676}
+.krv.w{color:#ff9944}
+
+.msgbox{
+  margin-top:13px;padding:11px 14px;
+  background:rgba(255,0,0,.07);border:1px solid rgba(255,0,0,.22);
+  border-radius:10px;font-size:.82rem;color:var(--R2);
+  display:flex;gap:9px;align-items:flex-start;line-height:1.55;
+}
+.msgbox i{margin-top:2px;flex-shrink:0;color:var(--R)}
+
+/* Aimlock gold card */
+.ac{
+  padding:18px 22px;
+  border:1px solid rgba(255,120,0,.38)!important;
+  background:rgba(255,80,0,.05)!important;
+  box-shadow:0 0 40px rgba(255,60,0,.14),0 4px 24px rgba(0,0,0,.45)!important;
+}
+.ah{display:flex;align-items:center;justify-content:space-between}
+.al{display:flex;align-items:center;gap:10px}
+.al>.ai{font-size:1.1rem;color:#ff9944;text-shadow:0 0 14px #ff9944}
+.anm{
+  font-size:1rem;font-weight:900;letter-spacing:1px;
+  background:linear-gradient(90deg,#ff9944,#ffcc44,#ff9944);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.asb{font-size:.67rem;color:rgba(255,120,0,.65);margin-top:2px;letter-spacing:1px}
+
+/* Switch */
+.sw{position:relative;width:52px;height:28px;flex-shrink:0}
+.sw input{display:none}
+.sw label{
+  position:absolute;inset:0;border-radius:50px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);
+  cursor:pointer;transition:all .35s;
+}
+.sw label::after{
+  content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+  background:#5a1010;transition:all .35s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 2px 6px rgba(0,0,0,.5);
+}
+.sw input:checked+label{background:rgba(255,0,0,.25);border-color:rgba(255,0,0,.55);box-shadow:0 0 18px rgba(255,0,0,.4)}
+.sw input:checked+label::after{left:calc(100% - 23px);background:var(--R);box-shadow:0 2px 14px rgba(255,0,0,.65)}
+.sw.g input:checked+label{background:rgba(255,120,0,.22);border-color:rgba(255,120,0,.55);box-shadow:0 0 18px rgba(255,120,0,.42)}
+.sw.g input:checked+label::after{background:#ff9944;box-shadow:0 2px 14px rgba(255,120,0,.6)}
+
+.div2{height:1px;background:linear-gradient(90deg,transparent,rgba(255,0,0,.28),transparent);margin:2px 0}
+
+/* Feature cards */
+.fc{padding:13px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:all .3s}
+.fc:hover{border-color:rgba(255,0,0,.35)!important;background:rgba(255,0,0,.09)!important}
+.fl{display:flex;align-items:center;gap:12px;flex:1}
+.fiw{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.f1{background:rgba(255,0,0,.15);color:var(--R1);border:1px solid rgba(255,0,0,.3)}
+.f2{background:rgba(255,80,0,.13);color:#ff8844;border:1px solid rgba(255,80,0,.3)}
+.f3{background:rgba(200,0,50,.15);color:#ff5580;border:1px solid rgba(200,0,50,.3)}
+.f4{background:rgba(255,40,0,.13);color:#ff7755;border:1px solid rgba(255,40,0,.3)}
+.f5{background:rgba(180,0,80,.15);color:#ff4488;border:1px solid rgba(180,0,80,.3)}
+.fi{display:flex;flex-direction:column;gap:2px}
+.fn{font-size:.88rem;font-weight:800;color:#ffd0d0;display:flex;align-items:center;gap:6px}
+.fd{font-size:.71rem;color:var(--mu)}
+
+/* Status badge */
+.kbadge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:.7rem;font-weight:800;letter-spacing:.5px}
+.kbadge.active{background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:#00e676}
+.kbadge.expired{background:rgba(255,0,0,.12);border:1px solid rgba(255,0,0,.3);color:var(--R1)}
+.kbadge.blocked{background:rgba(200,0,0,.15);border:1px solid rgba(200,0,0,.4);color:#ff4444}
+.kbadge.device{background:rgba(255,120,0,.12);border:1px solid rgba(255,120,0,.3);color:#ff9944}
+
+/* ══════════════════════════
+   TOOLS RUNNER
+══════════════════════════ */
+.tcard{padding:18px 22px}
+.thead2{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.thead2 i{color:var(--R);font-size:1rem;text-shadow:0 0 12px var(--R)}
+.thead2 .tn2{font-size:.95rem;font-weight:900;color:#ffd0d0}
+.rc{margin-left:auto;font-size:.73rem;color:var(--mu)}
+
+.idle{text-align:center;padding:24px 0;color:var(--mu)}
+.idle i{font-size:2.2rem;color:rgba(255,0,0,.25);margin-bottom:10px;display:block}
+.idle b{font-size:.86rem;font-weight:700}
+.idle p{font-size:.72rem;color:rgba(192,100,100,.45);margin-top:5px}
+
+.trun{display:none;flex-direction:column;gap:16px}
+.trun.on{display:flex}
+
+/* Gear cluster */
+.gear-row{display:flex;align-items:center;justify-content:center;gap:10px;padding:4px 0}
+.g-big{font-size:2.8rem;color:var(--R);animation:spin 1.6s linear infinite;text-shadow:0 0 30px var(--R),0 0 60px rgba(255,0,0,.4);filter:drop-shadow(0 0 10px var(--R))}
+.g-mid{font-size:1.8rem;color:var(--R1);animation:spin 1.2s linear infinite reverse;text-shadow:0 0 20px var(--R1);margin-top:10px}
+.g-sml{font-size:1.1rem;color:rgba(255,0,0,.55);animation:spin 2.2s linear infinite;margin-bottom:12px}
+
+/* Code terminal */
+.code-term{
+  background:rgba(0,0,0,.7);border:1px solid rgba(255,0,0,.3);
+  border-radius:12px;padding:14px 16px;
+  font-family:'Courier New',monospace;font-size:.75rem;
+  line-height:1.6;min-height:90px;overflow:hidden;position:relative;
+}
+.code-term::before{
+  content:'● ● ●';position:absolute;top:8px;left:12px;
+  font-size:.58rem;color:rgba(255,0,0,.5);letter-spacing:5px;
+  font-family:'Nunito',sans-serif;
+}
+.cline{margin-top:4px;display:flex;gap:6px;align-items:flex-start}
+.cline:first-child{margin-top:22px}
+.cpfx{color:rgba(255,0,0,.7);flex-shrink:0}
+.ctxt{color:var(--R2)}
+.ctxt.g{color:#00e676}
+.ctxt.y{color:#ffbb33}
+.ctxt.b{color:#64b5f6}
+.cursor{display:inline-block;width:7px;height:13px;background:var(--R);animation:blink .7s step-end infinite;vertical-align:text-bottom;margin-left:2px}
+
+/* Progress */
+.prog-wrap{width:100%;height:12px;background:rgba(255,255,255,.06);border-radius:50px;overflow:hidden;position:relative}
+.prog-bar{
+  height:100%;border-radius:50px;
+  background:linear-gradient(90deg,var(--Rd),var(--R),var(--R1),#ff6600);
+  animation:prog 2.8s ease-in-out infinite alternate;
+  box-shadow:0 0 20px rgba(255,0,0,.65),0 0 40px rgba(255,0,0,.3);
+  position:relative;
+}
+.prog-bar::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.38),transparent);
+  animation:shimmer 1.2s ease-in-out infinite;
+}
+
+/* Active tags */
+.atags{display:flex;flex-wrap:wrap;gap:7px}
+.atag{
+  padding:5px 12px;border-radius:50px;
+  background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.3);
+  font-size:.71rem;color:var(--R2);font-weight:700;
+  display:flex;align-items:center;gap:5px;
+  animation:fadeUp .3s ease both;
+}
+.atag i{font-size:.55rem;color:var(--R)}
+
+/* ══════════════════════════
+   NOTIFICATIONS
+══════════════════════════ */
+.nc{position:fixed;right:14px;bottom:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.ni{
+  pointer-events:all;min-width:215px;max-width:275px;
+  background:rgba(10,0,0,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:12px;
+  border:1px solid rgba(255,0,0,.25);box-shadow:0 10px 40px rgba(255,0,0,.28);
+  animation:slideIn .4s cubic-bezier(.34,1.56,.64,1) both;
+}
+.ni.out{animation:slideOut .35s ease-in both}
+.ni-ico{font-size:1.45rem;color:var(--R);width:32px;text-align:center;flex-shrink:0;animation:spin 1s linear infinite}
+.ni-ico.done{animation:none;color:#00e676}
+.ni-t h5{font-size:.82rem;font-weight:800;color:#ffd0d0}
+.ni-t p{font-size:.7rem;color:var(--mu);margin-top:2px}
+
+/* ══════════════════════════
+   KEYFRAMES
+══════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes barP{0%,100%{transform:scaleY(.3);opacity:.4}50%{transform:scaleY(1);opacity:1}}
+@keyframes glow{0%,100%{box-shadow:0 0 8px #00e676}50%{box-shadow:0 0 22px #00e676,0 0 38px #00e676}}
+@keyframes prog{0%{width:12%}100%{width:97%}}
+@keyframes shimmer{from{transform:translateX(-80px)}to{transform:translateX(80px)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes bounceIn{0%{transform:scale(0) rotate(-28deg)}65%{transform:scale(1.3) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(70px) scale(.85)}to{opacity:1;transform:translateX(0) scale(1)}}
+@keyframes slideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(90px)}}
+@keyframes dotBounce{0%,80%,100%{transform:scale(0);opacity:.4}40%{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+
+<canvas id="cv"></canvas>
+<div class="bg-glow"></div>
+<div class="nc" id="nc"></div>
+
+<!-- Auto-login checking overlay (nền mờ, không blocking toàn trang) -->
+<div id="checking-overlay" class="gone">
+  <i class="fa-solid fa-shield-halved co-ico"></i>
+  <div class="co-txt">ĐANG XÁC THỰC KEY...</div>
+  <div class="co-dots"><span></span><span></span><span></span></div>
+</div>
+
+<div class="wrap">
+
+  <!-- ═══ LOGIN ═══ -->
+  <div id="login">
+    <div class="lring">
+      <div class="linner">
+        <img src="https://sf-static.upanhlaylink.com/img/image_202603258d12c6fbe4a976b0c9610384fb5538fb.jpg" alt="Logo"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+        <i class="fa-solid fa-crosshairs lico"></i>
+      </div>
+    </div>
+
+    <div class="brand">
+      <h1>
+        <i class="fa-solid fa-at" style="-webkit-text-fill-color:##ff0505;margin-right:6px"></i>APP SUPER V5
+      </h1>
+      <p>HUẤN HÀ NEWTIG</p>
+    </div>
+
+    <div class="lcard">
+      <div class="iw">
+        <i class="fa-solid fa-key iico"></i>
+        <input class="kinp" id="kinp" type="text"
+               placeholder="Nhập Key kích hoạt của bạn..." autocomplete="off"/>
+      </div>
+
+      <button class="btnl" id="btnl" onclick="doLogin()">
+        <i class="fa-solid fa-paper-plane" id="li"></i>
+        <span id="lt">ĐĂNG NHẬP</span>
+      </button>
+
+      <div class="div"></div>
+
+<button class="btnf" onclick="goFreeKey()">
+  <i class="fa-solid fa-gift"></i>
+  <span>Lấy Free Key</span>
+  <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.72rem;margin-left:auto"></i>
+</button>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN SCREEN ═══ -->
+  <div id="main">
+
+    <!-- Top bar -->
+    <div class="topb">
+      <div class="tlogo">
+        <i class="fa-solid fa-user-circle"></i>
+        <span class="tn">APP SUPER V5</span>
+        <div class="sdot"></div>
+      </div>
+      <button class="btnout" onclick="doLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i>Đăng xuất
+      </button>
+    </div>
+
+    <!-- Key info card -->
+    <div class="gc kcard">
+      <div class="kch">
+        <div class="klw">
+          <img src="https://sf-static.upanhlaylink.com/img/image_20260325e357102dd1b967975b6193cb8525440e.jpg" alt="Logo"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+          <i class="fa-solid fa-crosshairs ki"></i>
+        </div>
+        <div class="ktw">
+          <h3><i class="fa-solid fa-shield-halved"></i> Thông Tin Key App</h3>
+          <span>APP SUPER V5</span>
+        </div>
+      </div>
+      <div class="krows">
+        <div class="krow">
+          <div class="krl"><i class="fa-solid fa-key"></i>Key</div>
+          <div class="krv" id="dk" style="font-family:'Courier New',monospace;font-size:.75rem">—</div>
+        </div>
+        <div class="krow">
+          <div class="krl"><i class="fa-regular fa-calendar-check"></i>Hạn sử dụng</div>
+          <div class="krv w" id="de">—</div>
+        </div>
+        <div class="krow">
+          <div class="krl"><i class="fa-solid fa-star"></i>Loại tài khoản</div>
+          <div class="krv w" id="dt">—</div>
+        </div>
+        <div class="krow">
+          <div class="krl"><i class="fa-solid fa-microchip"></i>Thiết bị</div>
+          <div class="krv" id="ddev">—</div>
+        </div>
+        <div class="krow">
+          <div class="krl"><i class="fa-solid fa-circle-check"></i>Trạng thái</div>
+          <div id="dstatus" class="krv">
+            <span class="kbadge active">
+              <i class="fa-solid fa-circle" style="font-size:.45rem"></i>Hoạt động
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="msgbox">
+        <i class="fa-solid fa-comment-dots"></i>
+        <span id="dmsg-txt">Chào mừng trở lại! Chúc bạn chơi game vui vẻ!</span>
+      </div>
+    </div>
+
+    <!-- Aimlock main switch -->
+    <div class="gc ac">
+      <div class="ah">
+        <div class="al">
+          <i class="fa-solid fa-bullseye ai"></i>
+          <div>
+            <div class="anm">AIMLOCK SUPER V5</div>
+            <div class="asb"><i class="fa-solid fa-bolt" style="font-size:.6rem"></i> Hỗ Trợ Khoá Vùng Đầu Khi Kéo Tâm , Tâm Sẽ Cứng Chặt hơn</div>
+          </div>
+        </div>
+        <div class="sw g">
+          <input type="checkbox" id="sw0" onchange="fsw(this,'Aimlock Super V5')">
+          <label for="sw0"></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="div2"></div>
+
+    <!-- Feature: ESP -->
+    <div class="gc fc">
+      <div class="fl">
+        <div class="fiw f1"><i class="fa-solid fa-sliders"></i></div>
+        <div class="fi">
+          <div class="fn"><i class="fa-solid fa-sliders" style="color:var(--R1);font-size:.78rem"></i>OPTIMIZATION</div>
+          <div class="fd">Tối Ưu Hiệu Xuất Trong Game </div>
+        </div>
+      </div>
+      <div class="sw"><input type="checkbox" id="sw1" onchange="fsw(this,'OPTIMIZATION')"><label for="sw1"></label></div>
+    </div>
+
+    <!-- Feature: No Recoil -->
+    <div class="gc fc">
+      <div class="fl">
+        <div class="fiw f2"><i class="fa-solid fa-person-rifle"></i></div>
+        <div class="fi">
+          <div class="fn"><i class="fa-solid fa-person-rifle" style="color:#ff8844;font-size:.78rem"></i>No Recoil</div>
+          <div class="fd">Triệt Tiêu Giảm Độ Giật Của Súng</div>
+        </div>
+      </div>
+      <div class="sw"><input type="checkbox" id="sw2" onchange="fsw(this,'No Recoil')"><label for="sw2"></label></div>
+    </div>
+
+    <!-- Feature: Auto Headshot -->
+    <div class="gc fc">
+      <div class="fl">
+        <div class="fiw f3"><i class="fa-solid fa-skull"></i></div>
+        <div class="fi">
+          <div class="fn"><i class="fa-solid fa-skull" style="color:#ff5580;font-size:.78rem"></i>Auto Headshot</div>
+          <div class="fd">Tâm Tự Ghim Đầu 90%</div>
+        </div>
+      </div>
+      <div class="sw"><input type="checkbox" id="sw3" onchange="fsw(this,'Auto Headshot')"><label for="sw3"></label></div>
+    </div>
+
+    <!-- Feature: Speed Hack -->
+    <div class="gc fc">
+      <div class="fl">
+        <div class="fiw f4"><i class="fa-solid fa-person-running"></i></div>
+        <div class="fi">
+          <div class="fn"><i class="fa-solid fa-person-running" style="color:#ff7755;font-size:.78rem"></i>Accessibility</div>
+          <div class="fd">Tăng tốc độ Cảm Biến Màn Hình</div>
+        </div>
+      </div>
+      <div class="sw"><input type="checkbox" id="sw4" onchange="fsw(this,'Accessibility')"><label for="sw4"></label></div>
+    </div>
+
+    <!-- Feature: Magic Bullet -->
+    <div class="gc fc">
+      <div class="fl">
+        <div class="fiw f5"><i class="fa-solid fa-cogs"></i></div>
+        <div class="fi">
+          <div class="fn"><i class="fa-solid fa-cogs" style="color:#ff4488;font-size:.78rem"></i>CONFIG HEAD</div>
+          <div class="fd">Hỗ Trợ Tỉ Lệ Ghìm Đầu 98%</div>
+        </div>
+      </div>
+      <div class="sw"><input type="checkbox" id="sw5" onchange="fsw(this,'CONFIG HEAD')"><label for="sw5"></label></div>
+    </div>
+
+    <!-- Tools Runner -->
+    <div class="gc tcard">
+      <div class="thead2">
+        <i class="fa-solid fa-terminal"></i>
+        <span class="tn2">Tools Runner</span>
+        <div class="rc" id="rc">0 chức năng đang chạy</div>
+      </div>
+
+      <!-- Idle state -->
+      <div class="idle" id="idle">
+        <i class="fa-solid fa-power-off"></i>
+        <b>Chưa có chức năng nào được bật</b>
+        <p>Bật các switch phía trên để bắt đầu</p>
+      </div>
+
+      <!-- Running state -->
+      <div class="trun" id="trun">
+        <!-- Gear animation -->
+        <div class="gear-row">
+          <i class="fa-solid fa-gear g-sml"></i>
+          <i class="fa-solid fa-gears g-big"></i>
+          <i class="fa-solid fa-gear g-mid"></i>
+          <i class="fa-solid fa-gear g-sml" style="animation-direction:reverse"></i>
+        </div>
+
+        <!-- Code terminal -->
+        <div class="code-term" id="cterm"></div>
+
+        <!-- Progress bar -->
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:.73rem;margin-bottom:7px">
+            <span style="color:var(--R2);font-weight:700">
+              <i class="fa-solid fa-circle-notch fa-spin" style="font-size:.7rem;margin-right:5px"></i>Đang áp dụng cấu hình...
+            </span>
+            <span id="pct" style="color:var(--R1);font-weight:800">0%</span>
+          </div>
+          <div class="prog-wrap"><div class="prog-bar"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--mu);margin-top:5px">
+            <span id="pstatus" style="color:var(--R2)">Khởi tạo...</span>
+            <span id="pactive" style="color:var(--R1);font-weight:700">0 active</span>
+          </div>
+        </div>
+
+        <!-- Active feature tags -->
+        <div class="atags" id="atags"></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+</div><!-- /wrap -->
+
+<script>
+/* ═══════════════════════════════
+   FIREBASE CONFIG
+   Điền thông tin Firebase của bạn vào đây
+═══════════════════════════════ */
+const FB_CONFIG = {
+    apiKey: "AIzaSyAsLfE05mJGELWsPG2j1c3ovpAAk6BVsMY",
+    authDomain: "shophuanha-e3766.firebaseapp.com",
+    projectId: "shophuanha-e3766",
+    storageBucket: "shophuanha-e3766.firebasestorage.app",
+    messagingSenderId: "827705832922",
+    appId: "1:827705832922:web:8e162cd725a9b9d2a3bce3"
+};
+
+let db = null;
+let fbReady = false;
+try {
+  firebase.initializeApp(FB_CONFIG);
+  db = firebase.database();
+  fbReady = true;
+} catch(e) {
+  console.warn('Firebase chưa cấu hình – chạy chế độ demo');
+}
+
+/* ═══════════════════════════════
+   PARTICLES (100% đỏ)
+═══════════════════════════════ */
+(function(){
+  const cv = document.getElementById('cv');
+  const cx = cv.getContext('2d');
+  let W, H, ps = [], mx = -999, my = -999;
+
+  function rsz(){ W = cv.width = innerWidth; H = cv.height = innerHeight }
+  addEventListener('resize', rsz); rsz();
+
+  const COLS = [
+    'rgba(255,0,0,',
+    'rgba(255,40,40,',
+    'rgba(200,0,0,',
+    'rgba(255,60,0,',
+    'rgba(180,0,0,'
+  ];
+
+  class P {
+    constructor(){ this.ini() }
+    ini(){
+      this.x = Math.random()*W; this.y = Math.random()*H;
+      this.vx = (Math.random()-.5)*.45; this.vy = -(Math.random()*.5+.08);
+      this.r = Math.random()*2.8+.7; this.a = Math.random()*.75+.2;
+      this.col = COLS[Math.floor(Math.random()*COLS.length)];
+      this.life = Math.random()*380+150; this.age = 0;
+      this.cn = Math.random() > .4;
+    }
+    step(){
+      this.x += this.vx; this.y += this.vy; this.age++;
+      const dx = mx-this.x, dy = my-this.y, d = Math.sqrt(dx*dx+dy*dy);
+      if(d < 140){ this.vx += dx*.0002; this.vy += dy*.0002 }
+      if(this.age > this.life || this.y < -18 || this.x < -18 || this.x > W+18) this.ini();
+    }
+    draw(){
+      const f = Math.min(this.age/28,1) * Math.min((this.life-this.age)/28,1);
+      cx.beginPath(); cx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+      cx.fillStyle = this.col + (this.a*f) + ')'; cx.fill();
+    }
+  }
+
+  for(let i = 0; i < 180; i++) ps.push(new P());
+
+  function lines(){
+    for(let i = 0; i < ps.length; i++){
+      if(!ps[i].cn) continue;
+      for(let j = i+1; j < ps.length; j++){
+        if(!ps[j].cn) continue;
+        const dx = ps[i].x-ps[j].x, dy = ps[i].y-ps[j].y;
+        const d = Math.sqrt(dx*dx+dy*dy);
+        if(d < 100){
+          cx.beginPath(); cx.moveTo(ps[i].x, ps[i].y); cx.lineTo(ps[j].x, ps[j].y);
+          cx.strokeStyle = 'rgba(255,0,0,' + (1-d/100)*.22 + ')';
+          cx.lineWidth = .75; cx.stroke();
+        }
+      }
+    }
+  }
+
+  (function loop(){
+    cx.clearRect(0, 0, W, H);
+    lines();
+    ps.forEach(p => { p.step(); p.draw() });
+    requestAnimationFrame(loop);
+  })();
+
+  addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY });
+  addEventListener('touchmove', e => {
+    if(e.touches.length){ mx = e.touches[0].clientX; my = e.touches[0].clientY }
+  }, { passive: true });
+})();
+
+/* ═══════════════════════════════
+   DEMO KEYS (fallback không Firebase)
+═══════════════════════════════ */
+const DEMO_KEYS = {
+  'AIMLOCK-SUPER-2025-FREE':  { expire:'2025-06-30', type:'Free',    maxDevices:1, status:'active', message:'Bạn đang dùng tài khoản Free!' },
+  'AIMLOCK-SUPER-2025-VIP':   { expire:'2025-12-31', type:'Premium', maxDevices:2, status:'active', message:'Chào mừng thành viên Premium!' },
+  'AIMLOCK-ULTRA-PRO-2025':   { expire:'2026-03-01', type:'VIP',     maxDevices:5, status:'active', message:'Chào mừng thành viên VIP!' }
+};
+
+/* ═══════════════════════════════
+   APP STATE
+═══════════════════════════════ */
+const SESSION_KEY = 'aimlock_saved_key';
+const DEVICE_ID   = getDeviceId();
+const active      = new Set();
+let ltm = null, codeTm = null, pctIv = null, pctVal = 0;
+
+function getDeviceId(){
+  let id = localStorage.getItem('aimlock_device_id');
+  if(!id){
+    id = 'DEV-' + Math.random().toString(36).slice(2,10).toUpperCase()
+       + '-' + Date.now().toString(36).toUpperCase();
+    localStorage.setItem('aimlock_device_id', id);
+  }
+  return id;
+}
+
+/* ═══════════════════════════════
+   AUTO-LOGIN ON PAGE LOAD
+   Chạy ngay khi load — không màn hình khởi động
+═══════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  const savedKey = localStorage.getItem(SESSION_KEY);
+  if(savedKey){
+    showCheckingOverlay(true);
+    // Delay nhỏ để particles render trước
+    setTimeout(() => autoLogin(savedKey), 300);
+  }
+});
+
+function showCheckingOverlay(show){
+  const el = document.getElementById('checking-overlay');
+  if(show){
+    el.classList.remove('gone', 'off');
+  } else {
+    el.classList.add('off');
+    setTimeout(() => el.classList.add('gone'), 420);
+  }
+}
+
+async function autoLogin(key){
+  await verifyKey(key, true);
+  showCheckingOverlay(false);
+}
+
+/* ═══════════════════════════════
+   LOGIN
+═══════════════════════════════ */
+function doLogin(){
+  const k = document.getElementById('kinp').value.trim();
+  if(!k){ shakeInp(); return; }
+  showBtnChecking();
+  clearTimeout(ltm);
+  ltm = setTimeout(async () => {
+    await verifyKey(k, false);
+  }, 2200);
+}
+
+function showBtnChecking(){
+  const btn = document.getElementById('btnl');
+  btn.className = 'btnl ck';
+  btn.onclick = null;
+  document.getElementById('li').outerHTML =
+    `<div class="bars" id="brs"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>`;
+  document.getElementById('lt').textContent = 'ĐANG KIỂM TRA KEY...';
+}
+
+async function verifyKey(key, isAuto){
+  const k = key.toUpperCase().trim();
+  let info = null;
+
+  // Try Firebase first
+  if(fbReady){
+    try{
+      const snap = await db.ref('keys/' + k).get();
+      if(snap.exists()) info = snap.val();
+    } catch(e){ console.warn('Firebase error, fallback demo') }
+  }
+
+  // Fallback demo keys
+  if(!info && DEMO_KEYS[k]) info = DEMO_KEYS[k];
+
+  // Key not found
+  if(!info){
+    if(isAuto){ localStorage.removeItem(SESSION_KEY); resetLoginBtn(); return; }
+    loginFail('KEY KHÔNG HỢP LỆ!'); return;
+  }
+
+  const now = new Date();
+  const expDate = new Date(info.expire);
+
+  // Blocked
+  if(info.status === 'blocked'){
+    if(isAuto) localStorage.removeItem(SESSION_KEY);
+    loginFail('KEY ĐÃ BỊ KHOÁ!');
+    notif('Key bị khoá', 'Vui lòng liên hệ admin để được hỗ trợ');
+    return;
+  }
+
+  // Expired
+  if(now > expDate){
+    if(isAuto) localStorage.removeItem(SESSION_KEY);
+    loginFail('KEY ĐÃ HẾT HẠN!');
+    notif('Key hết hạn', 'Vui lòng gia hạn để tiếp tục');
+    return;
+  }
+
+  // Device limit (Firebase only)
+  let devCount = 1;
+  if(fbReady && info.maxDevices){
+    try{
+      const devsSnap = await db.ref('keys/' + k + '/devices').get();
+      const devs = devsSnap.exists() ? devsSnap.val() : {};
+      const devList = Object.keys(devs);
+      devCount = devList.length;
+      if(!devs[DEVICE_ID] && devList.length >= info.maxDevices){
+        if(isAuto) localStorage.removeItem(SESSION_KEY);
+        loginFail('GIỚI HẠN THIẾT BỊ!');
+        notif('Đã đạt giới hạn thiết bị', `Tối đa ${info.maxDevices} thiết bị`);
+        return;
+      }
+      // Register device & update usage
+      await db.ref('keys/' + k + '/devices/' + DEVICE_ID).set({ lastLogin: Date.now(), id: DEVICE_ID });
+      await db.ref('keys/' + k + '/usageCount').set((info.usageCount||0) + 1);
+      await db.ref('keys/' + k + '/lastUsed').set(Date.now());
+      devCount = (devs[DEVICE_ID] ? devList.length : devList.length + 1);
+    } catch(e){ console.warn('Device check error', e) }
+  }
+
+  // Save for next auto-login
+  localStorage.setItem(SESSION_KEY, k);
+
+  const fmtDate = expDate.toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' });
+  loginOk(k, info, fmtDate, devCount);
+}
+
+function loginOk(k, info, fmtDate, devCount){
+  const btn = document.getElementById('btnl');
+  const brs = document.getElementById('brs');
+  btn.className = 'btnl ok';
+  if(brs) brs.outerHTML = `<i id="li" class="fa-solid fa-circle-check" style="animation:bounceIn .5s ease both;font-size:1.1rem"></i>`;
+  document.getElementById('lt').textContent = 'XÁC THỰC THÀNH CÔNG!';
+
+  // Fill key info
+  const sk = k.length > 20 ? k.slice(0,18) + '…' : k;
+  document.getElementById('dk').textContent = sk;
+  document.getElementById('de').textContent = fmtDate;
+  document.getElementById('dt').innerHTML = `<i class="fa-solid fa-crown" style="color:#ff9944"></i> ${info.type}`;
+  document.getElementById('ddev').textContent = `${devCount||1} / ${info.maxDevices||1} thiết bị`;
+  document.getElementById('dstatus').innerHTML =
+    `<span class="kbadge active"><i class="fa-solid fa-circle" style="font-size:.45rem"></i>Hoạt động</span>`;
+  document.getElementById('dmsg-txt').textContent = info.message || 'Chào mừng trở lại!';
+
+  setTimeout(() => {
+    document.getElementById('login').classList.add('off');
+    document.getElementById('main').classList.add('on');
+    notif('Đăng nhập thành công', 'Key hợp lệ – Chào mừng!');
+  }, 900);
+}
+
+function loginFail(msg){
+  const btn = document.getElementById('btnl');
+  const brs = document.getElementById('brs');
+  btn.className = 'btnl er';
+  if(brs) brs.outerHTML = `<i id="li" class="fa-solid fa-circle-xmark" style="animation:bounceIn .5s ease both;font-size:1.1rem"></i>`;
+  document.getElementById('lt').textContent = msg || 'THẤT BẠI!';
+  setTimeout(() => resetLoginBtn(), 2000);
+}
+
+function resetLoginBtn(){
+  const btn = document.getElementById('btnl');
+  btn.className = 'btnl';
+  btn.onclick = doLogin;
+  btn.innerHTML = `<i class="fa-solid fa-right-to-bracket" id="li"></i><span id="lt">ĐĂNG NHẬP</span>`;
+}
+
+function shakeInp(){
+  const i = document.getElementById('kinp');
+  i.style.borderColor = 'var(--R)';
+  i.style.boxShadow = '0 0 0 3px rgba(255,0,0,.2)';
+  i.style.animation = 'shake .42s ease both';
+  setTimeout(() => { i.style.animation=''; i.style.borderColor=''; i.style.boxShadow=''; }, 500);
+}
+
+function doLogout(){
+  localStorage.removeItem(SESSION_KEY);
+  document.getElementById('main').classList.remove('on');
+  document.getElementById('login').classList.remove('off');
+  document.getElementById('kinp').value = '';
+  resetLoginBtn();
+  document.querySelectorAll('.sw input').forEach(s => s.checked = false);
+  active.clear(); stopCode(); updateRunner();
+  notif('Đã đăng xuất', 'Key đã được xóa khỏi thiết bị này');
+}
+
+function goFreeKey() {
+  const url = './freekey.html';
+  const newTab = window.open(url, '_blank');
+  
+  if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+    window.location.href = url;
+  }
+}
+
+/* ═══════════════════════════════
+   FEATURE SWITCHES
+═══════════════════════════════ */
+function fsw(el, name){
+  if(el.checked){ active.add(name); notif('Đang kích hoạt', name); }
+  else active.delete(name);
+  updateRunner();
+}
+
+function updateRunner(){
+  const n = active.size;
+  document.getElementById('rc').textContent = n + ' chức năng đang chạy';
+  const idle = document.getElementById('idle');
+  const trun = document.getElementById('trun');
+  const tags = document.getElementById('atags');
+
+  if(n === 0){
+    idle.style.display = '';
+    trun.classList.remove('on');
+    stopCode();
+  } else {
+    idle.style.display = 'none';
+    trun.classList.add('on');
+    tags.innerHTML = '';
+    active.forEach(f => {
+      const t = document.createElement('div');
+      t.className = 'atag';
+      t.innerHTML = `<i class="fa-solid fa-circle-dot"></i>${f}`;
+      tags.appendChild(t);
+    });
+    document.getElementById('pactive').textContent = n + ' active';
+    startCode();
+  }
+}
+
+/* ═══════════════════════════════
+   CODE TERMINAL EFFECT
+═══════════════════════════════ */
+const CODE_LINES = [
+  { p:'$', t:' loading aimlock.exe',      c:'b' },
+  { p:'>', t:' injecting modules...',     c:'y' },
+  { p:'✓', t:' memory patch applied',     c:'g' },
+  { p:'>', t:' bypass anti-cheat...',     c:'y' },
+  { p:'$', t:' connecting server...',     c:'b' },
+  { p:'✓', t:' features activated',       c:'g' },
+  { p:'>', t:' stabilizing engine...',    c:'y' },
+  { p:'✓', t:' all systems online',       c:'g' },
+  { p:'$', t:' monitoring threads',       c:'b' },
+  { p:'✓', t:' precision mode: ON',       c:'g' },
+  { p:'>', t:' encrypting packets...',    c:'y' },
+  { p:'✓', t:' secure channel ready',     c:'g' },
+  { p:'$', t:' scanning targets...',      c:'b' },
+  { p:'✓', t:' aim engine calibrated',    c:'g' },
+];
+let clIdx = 0, codeStopped = true;
+
+function startCode(){
+  if(!codeStopped) return;
+  codeStopped = false; clIdx = 0;
+  document.getElementById('cterm').innerHTML = '';
+  startPct(); nextLine();
+}
+
+function stopCode(){
+  codeStopped = true;
+  clearTimeout(codeTm);
+  clearInterval(pctIv);
+  pctVal = 0;
+}
+
+function nextLine(){
+  if(codeStopped) return;
+  const ct = document.getElementById('cterm');
+  const ex = ct.querySelectorAll('.cline');
+  if(ex.length >= 6) ex[0].remove();
+  const l = CODE_LINES[clIdx % CODE_LINES.length]; clIdx++;
+  const div = document.createElement('div'); div.className = 'cline';
+  div.innerHTML = `<span class="cpfx">${l.p}</span><span class="ctxt ${l.c}">${l.t}</span><span class="cursor"></span>`;
+  ct.appendChild(div);
+  ct.querySelectorAll('.cursor').forEach((c,i,a) => { if(i < a.length-1) c.remove(); });
+  codeTm = setTimeout(nextLine, Math.random()*700+350);
+}
+
+function startPct(){
+  pctVal = 0; clearInterval(pctIv);
+  const msgs = ['Khởi tạo engine...','Inject module...','Bypass anti-cheat...','Kết nối server...','Tối ưu bộ nhớ...','Áp dụng config...','Hoàn tất!'];
+  let mi = 0;
+  pctIv = setInterval(() => {
+    pctVal = Math.min(pctVal + (Math.random()*3+.5), 99);
+    const el = document.getElementById('pct');
+    const ps = document.getElementById('pstatus');
+    if(el) el.textContent = Math.round(pctVal) + '%';
+    if(ps){
+      const ni = Math.min(Math.floor(pctVal/14), msgs.length-1);
+      if(ni !== mi){ mi = ni; ps.textContent = msgs[mi]; }
+    }
+  }, 120);
+}
+
+/* ═══════════════════════════════
+   NOTIFICATIONS
+═══════════════════════════════ */
+function notif(title, desc, dur = 3200){
+  const c = document.getElementById('nc');
+  const el = document.createElement('div'); el.className = 'ni';
+  el.innerHTML = `
+    <div class="ni-ico"><i class="fa-solid fa-gear"></i></div>
+    <div class="ni-t"><h5>${title}</h5><p>${desc}</p></div>
+  `;
+  c.appendChild(el);
+  const ico = el.querySelector('.ni-ico');
+  setTimeout(() => {
+    ico.classList.add('done');
+    ico.innerHTML = `<i class="fa-solid fa-circle-check" style="animation:bounceIn .4s ease both"></i>`;
+  }, 1300);
+  setTimeout(() => {
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 380);
+  }, dur);
+}
+
+/* Enter key to login */
+document.getElementById('kinp').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>

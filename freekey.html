@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Lấy Free Key – AimLock Super V5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+    
+    html,
+    body {
+      min-height: 100%;
+      font-family: 'Nunito', system-ui, sans-serif;
+      background: #0a0000;
+      color: #ffd0d0;
+      overflow-x: hidden
+    }
+    
+    :root {
+      --R: #FF0000;
+      --R1: #ff3333;
+      --R2: #ff6666;
+      --Rd: #cc0000;
+      --mu: #c08080;
+      --gold: #ff9944;
+    }
+    
+    #cv {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none
+    }
+    
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse 70% 60% at 20% 20%, rgba(255, 0, 0, .22) 0%, transparent 70%), radial-gradient(ellipse 55% 45% at 80% 80%, rgba(180, 0, 0, .18) 0%, transparent 70%), radial-gradient(ellipse 40% 40% at 60% 5%, rgba(255, 0, 0, .1) 0%, transparent 65%)
+    }
+    
+    .wrap {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 16px 60px
+    }
+    
+    /* Header */
+    .page {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      animation: fadeUp .6s ease both
+    }
+    
+    .back-btn {
+      align-self: flex-start;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--R2);
+      font-size: .85rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: rgba(255, 0, 0, .08);
+      border: 1px solid rgba(255, 0, 0, .2);
+      padding: 8px 16px;
+      border-radius: 50px;
+      transition: all .3s;
+      text-decoration: none;
+    }
+    
+    .back-btn:hover {
+      background: rgba(255, 0, 0, .15);
+      color: var(--R1)
+    }
+    
+    /* Logo section */
+    .hero {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px
+    }
+    
+    .hero-ring {
+      position: relative;
+      width: 100px;
+      height: 100px
+    }
+    
+    .hero-ring::before {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      background: conic-gradient(var(--R) 0deg, #ff6600 80deg, var(--R) 200deg, #aa0000 300deg, var(--R) 360deg);
+      animation: spin 3s linear infinite;
+      z-index: 0
+    }
+    
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #250000, #0a0000);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(255, 0, 0, .5)
+    }
+    
+    .hero-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%
+    }
+    
+    .hero-inner i {
+      font-size: 40px;
+      color: var(--R);
+      text-shadow: 0 0 26px var(--R);
+      display: none
+    }
+    
+    .hero h1 {
+      font-size: 1.6rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--R), #ff6600, var(--R1));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text
+    }
+    
+    .hero p {
+      font-size: .8rem;
+      color: var(--mu);
+      letter-spacing: 2px
+    }
+    
+    /* Glass card */
+    .gc {
+      background: rgba(255, 0, 0, .05);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 0, 0, .22);
+      border-radius: 18px;
+      box-shadow: 0 6px 36px rgba(255, 0, 0, .15)
+    }
+    
+    /* Info card */
+    .info-card {
+      padding: 24px
+    }
+    
+    .info-card h2 {
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--R1);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: .5px
+    }
+    
+    .info-card h2 i {
+      text-shadow: 0 0 12px var(--R)
+    }
+    
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 18px
+    }
+    
+    .feat-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255, 0, 0, .06);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 0, 0, .12)
+    }
+    
+    .feat-ico {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .95rem;
+      flex-shrink: 0
+    }
+    
+    .fi1 {
+      background: rgba(255, 0, 0, .15);
+      color: var(--R1);
+      border: 1px solid rgba(255, 0, 0, .3)
+    }
+    
+    .fi2 {
+      background: rgba(255, 80, 0, .13);
+      color: #ff8844;
+      border: 1px solid rgba(255, 80, 0, .3)
+    }
+    
+    .fi3 {
+      background: rgba(200, 0, 50, .15);
+      color: #ff5580;
+      border: 1px solid rgba(200, 0, 50, .3)
+    }
+    
+    .feat-txt h4 {
+      font-size: .86rem;
+      font-weight: 800;
+      color: #ffd0d0;
+      margin-bottom: 2px
+    }
+    
+    .feat-txt p {
+      font-size: .73rem;
+      color: var(--mu);
+      line-height: 1.5
+    }
+    
+    .div {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 0, 0, .3), transparent);
+      margin: 4px 0
+    }
+    
+    /* Steps */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+    
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(255, 0, 0, .04);
+      border: 1px solid rgba(255, 0, 0, .1)
+    }
+    
+    .step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255, 0, 0, .2);
+      border: 1px solid rgba(255, 0, 0, .4);
+      color: var(--R1);
+      font-size: .8rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px
+    }
+    
+    .step-txt p {
+      font-size: .81rem;
+      color: #ffd0d0;
+      font-weight: 600
+    }
+    
+    .step-txt span {
+      font-size: .72rem;
+      color: var(--mu)
+    }
+    
+    /* Link card */
+    .link-card {
+      padding: 22px
+    }
+    
+    .link-card h2 {
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--R1);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: .5px
+    }
+    
+    .link-loading {
+      text-align: center;
+      padding: 16px 0;
+      color: var(--mu);
+      font-size: .85rem
+    }
+    
+    .link-loading i {
+      font-size: 1.8rem;
+      color: rgba(255, 0, 0, .3);
+      display: block;
+      margin-bottom: 8px;
+      animation: spin 1.5s linear infinite
+    }
+    
+    .link-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 12px
+    }
+    
+    .link-box {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: rgba(0, 0, 0, .5);
+      border: 2px solid rgba(255, 0, 0, .35);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    
+    .link-inp {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 14px 16px;
+      color: #ffd0d0;
+      font-size: .88rem;
+      font-family: 'Courier New', monospace;
+      letter-spacing: .5px;
+      cursor: text;
+    }
+    
+    .link-inp::selection {
+      background: rgba(255, 0, 0, .3)
+    }
+    
+    .copy-btn {
+      padding: 14px 18px;
+      background: rgba(255, 0, 0, .15);
+      border: none;
+      border-left: 2px solid rgba(255, 0, 0, .35);
+      color: var(--R1);
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all .3s;
+      flex-shrink: 0;
+    }
+    
+    .copy-btn:hover {
+      background: rgba(255, 0, 0, .28);
+      color: var(--R)
+    }
+    
+    .copy-btn.copied {
+      background: rgba(0, 200, 83, .15);
+      color: #00e676;
+      border-left-color: rgba(0, 200, 83, .35)
+    }
+    
+    .open-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--Rd), var(--R), var(--R1));
+      color: #fff;
+      font-size: .95rem;
+      font-weight: 800;
+      font-family: 'Nunito', sans-serif;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all .3s;
+      box-shadow: 0 5px 28px rgba(255, 0, 0, .45);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .open-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255, 255, 255, .18), transparent);
+      transform: translateX(-100%);
+      transition: transform .5s
+    }
+    
+    .open-btn:hover::before {
+      transform: translateX(100%)
+    }
+    
+    .open-btn:hover {
+      box-shadow: 0 7px 40px rgba(255, 0, 0, .65);
+      transform: translateY(-1px)
+    }
+    
+    .link-desc {
+      font-size: .76rem;
+      color: var(--mu);
+      text-align: center;
+      line-height: 1.55;
+      padding: 0 4px
+    }
+    
+    /* Notice */
+    .notice {
+      padding: 14px 18px;
+      background: rgba(255, 120, 0, .07);
+      border: 1px solid rgba(255, 120, 0, .25);
+      border-radius: 12px;
+      font-size: .8rem;
+      color: #ff9944;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      line-height: 1.55
+    }
+    
+    .notice i {
+      margin-top: 2px;
+      flex-shrink: 0
+    }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: rgba(0, 200, 83, .15);
+      border: 1px solid rgba(0, 200, 83, .3);
+      color: #00e676;
+      padding: 12px 22px;
+      border-radius: 50px;
+      font-size: .84rem;
+      font-weight: 700;
+      z-index: 9999;
+      transition: transform .4s cubic-bezier(.34, 1.56, .64, 1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(12px)
+    }
+    
+    .toast.show {
+      transform: translateX(-50%) translateY(0)
+    }
+    
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(28px)
+      }
+      
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+    
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+  </style>
+</head>
+
+<body>
+  
+  <canvas id="cv"></canvas>
+  <div class="bg-glow"></div>
+  <div class="toast" id="toast"><i class="fa-solid fa-check"></i><span id="toast-txt">Đã sao chép!</span></div>
+  
+  <div class="wrap">
+    <div class="page">
+      
+      <a class="back-btn" href="App.html">
+        <i class="fa-solid fa-arrow-left"></i>Quay lại đăng nhập
+      </a>
+      
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hero-ring">
+          <div class="hero-inner">
+            <img src="https://sf-static.upanhlaylink.com/img/image_202603258d12c6fbe4a976b0c9610384fb5538fb.jpg" alt="Logo" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />
+            <i class="fa-solid fa-crosshairs"></i>
+          </div>
+        </div>
+        <h1><i class="fa-solid fa-gift" style="-webkit-text-fill-color:var(--gold)"></i> Lấy Free Key</h1>
+        <p>AIMLOCK SUPER V5 – MIỄN PHÍ</p>
+      </div>
+      
+      <!-- Info card -->
+      <div class="gc info-card">
+        <h2><i class="fa-solid fa-circle-info"></i>Giới thiệu AimLock Super V5</h2>
+        <div class="feature-list">
+          <div class="feat-item">
+            <div class="feat-ico fi1"><i class="fa-solid fa-bullseye"></i></div>
+            <div class="feat-txt">
+              <h4>Aimlock Ultra Precision</h4>
+              <p>Công nghệ ngắm tự động thế hệ V5 – độ chính xác tuyệt đối, không giật, không lag.</p>
+            </div>
+          </div>
+       
+        </div>
+        
+        <div class="div"></div>
+        
+        <h2 style="margin-top:14px"><i class="fa-solid fa-list-check"></i>Hướng dẫn lấy key</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-txt">
+              <p>Sao chép link bên dưới</p><span>Nhấn nút copy hoặc mở link trực tiếp</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-txt">
+              <p>Truy cập link và hoàn thành nhiệm vụ</p><span>Xem quảng cáo hoặc thực hiện yêu cầu để nhận key</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-txt">
+              <p>Sao chép key nhận được</p><span>Key có định dạng AIMLOCK-XXXX-XXXX</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-txt">
+              <p>Dán key vào ô đăng nhập</p><span>Quay lại App và nhập key để kích hoạt</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Link card -->
+      <div class="gc link-card">
+        <h2><i class="fa-solid fa-link"></i>Link lấy Free Key</h2>
+        
+        <div id="link-loading" class="link-loading">
+          <i class="fa-solid fa-circle-notch"></i>
+          <span>Đang tải link...</span>
+        </div>
+        
+        <div id="link-wrap" class="link-wrap" style="display:none">
+          <div class="link-box">
+            <input class="link-inp" id="link-inp" type="text" readonly value="" />
+            <button class="copy-btn" id="copy-btn" onclick="copyLink()" title="Sao chép link">
+              <i class="fa-solid fa-copy" id="copy-ico"></i>
+            </button>
+          </div>
+          
+          <button class="open-btn" onclick="openLink()">
+            <i class="fa-solid fa-external-link-alt"></i>
+            Mở Link Lấy Key
+          </button>
+          
+          <p class="link-desc">
+            <i class="fa-solid fa-clock" style="color:var(--R1);margin-right:4px"></i>
+            Key Free có thời hạn giới hạn. Nâng cấp VIP để sử dụng lâu dài không giới hạn thiết bị.
+          </p>
+        </div>
+      </div>
+      
+      <!-- Notice -->
+      <div class="notice">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>Chỉ sử dụng tool cho mục đích cá nhân và hợp lý. Không chia sẻ key với người khác. Admin có thể khoá key nếu phát hiện vi phạm. Key Free chỉ dùng được trên 1 thiết bị.</span>
+      </div>
+      
+    </div>
+  </div>
+  
+  <script>
+    /* Firebase config – cùng config với App.html */
+    const FB_CONFIG = {
+      apiKey: "AIzaSyAsLfE05mJGELWsPG2j1c3ovpAAk6BVsMY",
+      authDomain: "shophuanha-e3766.firebaseapp.com",
+      projectId: "shophuanha-e3766",
+      storageBucket: "shophuanha-e3766.firebasestorage.app",
+      messagingSenderId: "827705832922",
+      appId: "1:827705832922:web:8e162cd725a9b9d2a3bce3"
+    };
+    
+    // Default free key link (fallback)
+    const DEFAULT_LINK = "https://linkvertise.com/your-link-here";
+    let freeLink = DEFAULT_LINK;
+    
+    let db = null;
+    try {
+      // Check if already initialized
+      if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+      db = firebase.database();
+      loadFreeLink();
+    } catch (e) {
+      console.warn('Firebase not ready');
+      showLink(DEFAULT_LINK);
+    }
+    
+    async function loadFreeLink() {
+      try {
+        const snap = await db.ref('config/freeKeyLink').get();
+        if (snap.exists() && snap.val()) {
+          freeLink = snap.val();
+        }
+      } catch (e) {
+        console.warn('Could not load link from Firebase');
+      }
+      showLink(freeLink);
+    }
+    
+    function showLink(link) {
+      document.getElementById('link-loading').style.display = 'none';
+      document.getElementById('link-wrap').style.display = 'flex';
+      document.getElementById('link-inp').value = link;
+      freeLink = link;
+    }
+    
+    function copyLink() {
+      const link = document.getElementById('link-inp').value;
+      if (!link) return;
+      navigator.clipboard.writeText(link).then(() => {
+        const btn = document.getElementById('copy-btn');
+        const ico = document.getElementById('copy-ico');
+        btn.classList.add('copied');
+        ico.className = 'fa-solid fa-check';
+        showToast('Đã sao chép link!');
+        setTimeout(() => { btn.classList.remove('copied');
+          ico.className = 'fa-solid fa-copy' }, 2000);
+      }).catch(() => {
+        // Fallback for older browsers
+        const inp = document.getElementById('link-inp');
+        inp.select();
+        inp.setSelectionRange(0, 9999);
+        document.execCommand('copy');
+        showToast('Đã sao chép link!');
+      });
+    }
+    
+    function openLink() {
+      if (freeLink && freeLink !== 'https://linkvertise.com/your-link-here') {
+        window.open(freeLink, '_blank');
+      } else {
+        showToast('Link chưa được cấu hình!');
+      }
+    }
+    
+    function showToast(msg, dur = 2500) {
+      const t = document.getElementById('toast');
+      document.getElementById('toast-txt').textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), dur);
+    }
+    
+    /* Particles */
+    (function() {
+      const cv = document.getElementById('cv'),
+        cx = cv.getContext('2d');
+      let W, H, ps = [],
+        mx = -999,
+        my = -999;
+      
+      function rsz() { W = cv.width = innerWidth;
+        H = cv.height = innerHeight }
+      addEventListener('resize', rsz);
+      rsz();
+      const COLS = ['rgba(255,0,0,', 'rgba(255,40,40,', 'rgba(200,0,0,', 'rgba(255,60,0,'];
+      class P {
+        constructor() { this.ini() }
+        ini() { this.x = Math.random() * W;
+          this.y = Math.random() * H;
+          this.vx = (Math.random() - .5) * .4;
+          this.vy = -(Math.random() * .4 + .08);
+          this.r = Math.random() * 2.2 + .6;
+          this.a = Math.random() * .7 + .2;
+          this.col = COLS[Math.floor(Math.random() * COLS.length)];
+          this.life = Math.random() * 350 + 150;
+          this.age = 0;
+          this.cn = Math.random() > .45 }
+        step() { this.x += this.vx;
+          this.y += this.vy;
+          this.age++; if (this.age > this.life || this.y < -15 || this.x < -15 || this.x > W + 15) this.ini() }
+        draw() { const f = Math.min(this.age / 25, 1) * Math.min((this.life - this.age) / 25, 1);
+          cx.beginPath();
+          cx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+          cx.fillStyle = this.col + (this.a * f) + ')';
+          cx.fill() }
+      }
+      for (let i = 0; i < 120; i++) ps.push(new P());
+      
+      function lines() { for (let i = 0; i < ps.length; i++) { if (!ps[i].cn) continue; for (let j = i + 1; j < ps.length; j++) { if (!ps[j].cn) continue; const dx = ps[i].x - ps[j].x,
+              dy = ps[i].y - ps[j].y,
+              d = Math.sqrt(dx * dx + dy * dy); if (d < 90) { cx.beginPath();
+              cx.moveTo(ps[i].x, ps[i].y);
+              cx.lineTo(ps[j].x, ps[j].y);
+              cx.strokeStyle = 'rgba(255,0,0,' + (1 - d / 90) * .2 + ')';
+              cx.lineWidth = .65;
+              cx.stroke() } } } }
+      (function loop() { cx.clearRect(0, 0, W, H);
+        lines();
+        ps.forEach(p => { p.step();
+          p.draw() });
+        requestAnimationFrame(loop) })();
+    })();
+  </script>
+</body>
+
+</html>
